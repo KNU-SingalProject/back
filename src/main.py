@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api import user, facility
+from api import user, facility, board
 
 app = FastAPI()
 
@@ -15,6 +15,7 @@ app.add_middleware(
 
 app.include_router(user.router)
 app.include_router(facility.router)
+app.include_router(board.router)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}

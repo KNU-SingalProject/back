@@ -22,6 +22,15 @@ async def user_log_in(
 ):
     return await user_service.log_in(request, req)
 
+@router.post("/check-in", status_code=200)
+async def user_log_in(
+        request: LogInRequest,
+        req: Request,
+        user_service: UserService = Depends(get_user_service),
+):
+    return await user_service.check_in(request, req)
+
+
 @router.get("/search", status_code=200)
 async def search_users(
         name: str,

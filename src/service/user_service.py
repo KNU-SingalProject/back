@@ -186,6 +186,67 @@ class UserService:
                 }
             )
 
+    async def check_in(self, request: LogInRequest, req: Request):
+        try:
+            result = await self.find_users_with_name_and_birth(
+                name=request.name,
+                birth=request.birth
+            )
+
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "USER_NOT_FOUND",
+                        "message": "해당 이름과 생년으로 사용자를 찾을 수 없습니다."
+                    }
+                )
+
+            member_ids = []
+            if result.get("multiple"):
+                member_ids = [c["member_id"] for c in result.get("candidates", [])]
+            elif result.get("user"):
+                member_ids = [result["user"]["member_id"]]
+
+            # ✅ 동명이인 케이스: 첫 로그인 여부나 방문 체크 없이 전화번호만 반환
+            if result.get("multiple"):
+                phone_numbers = [c["phone"] for c in result.get("candidates", [])]
+                return {
+                    "multiple": True,
+                    "phone_numbers": phone_numbers
+                }
+
+            # ✅ 한 명만 있는 경우 처리
+            user = result.get("user")
+            if not user:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "USER_NOT_FOUND",
+                        "message": "사용자 정보가 없습니다."
+                    }
+                )
+
+            # ✅ 방문 등록 (제한 없이)
+            await self.visit_repo.add_visit(user["member_id"])
+
+            access_token = self.create_jwt(user["member_id"])
+            return {
+                "access_token": access_token,
+                "name": user["name"],
+                "message": "로그인 성공 및 방문 등록 완료"
+            }
+
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "code": "INTERNAL_SERVER_ERROR",
+                    "message": f"예기치 못한 오류 발생: {str(e)}"
+                }
+            )
 
     async def find_users_with_name_and_birth(self, name: str, birth: date):
         users = await self.user_repo.get_user_by_name_and_birth(name=name, birth=birth)
