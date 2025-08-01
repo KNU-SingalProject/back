@@ -26,6 +26,15 @@ class FacilityService:
                 detail={"code": "FACILITY_UNAVAILABLE", "message": "해당 시설은 현재 예약이 불가능합니다."}
             )
 
+    async def _check_and_log_facility_usage(self, user_id: str, facility_id: int):
+        """하루 동일 시설 이용 여부 체크 후 로그 기록"""
+        if await self.facility_repo.has_used_facility_today(user_id, facility_id, date.today()):
+            raise HTTPException(
+                status_code=403,
+                detail={"code": "DAILY_LIMIT_REACHED", "message": "해당 시설은 오늘 이미 이용하셨습니다."}
+            )
+        await self.facility_repo.log_facility_usage(user_id, facility_id)
+
     async def reservation(self, request: FacilityReservationRequest):
         await self._check_facility_status(request.facility_id)
 
@@ -37,6 +46,8 @@ class FacilityService:
             return user_check
 
         user = user_check["user"]
+
+        await self._check_and_log_facility_usage(user["member_id"], request.facility_id)
 
         reservation = await self.facility_repo.create_reservation(request.facility_id)
         await self.facility_repo.add_reservation_user(reservation.id, user["member_id"])
@@ -58,6 +69,8 @@ class FacilityService:
                 status_code=404,
                 detail="선택한 전화번호에 해당하는 사용자를 찾을 수 없습니다."
             )
+
+        await self._check_and_log_facility_usage(user["member_id"], request.facility_id)
 
         # 예약 생성
         reservation = await self.facility_repo.create_reservation(request.facility_id)
@@ -119,6 +132,7 @@ class FacilityService:
 
         reservation = await self.facility_repo.create_reservation(request.facility_id)
         for user in unique_members:
+            await self._check_and_log_facility_usage(user["member_id"], request.facility_id)
             await self.facility_repo.add_reservation_user(reservation.id, user["member_id"])
 
         return {"message": "예약이 완료되었습니다", "reservation_id": reservation.id}
@@ -148,6 +162,8 @@ class FacilityService:
                 )
             else:
                 user = user_check["user"]
+
+            await self._check_and_log_facility_usage(user["member_id"], request.facility_id)
 
             await self.facility_repo.add_reservation_user(reservation.id, user["member_id"])
 
@@ -188,15 +204,3 @@ class FacilityService:
     async def get_all_facility_statuses(self):
         statuses = await self.facility_repo.get_all_facility_statuses()
         return statuses
-
-    async def _check_daily_usage_limit(self, user_id: str, facility_id: int):
-        today = date.today()
-        already_used = await self.facility_repo.has_used_facility_today(user_id, facility_id, today)
-        if already_used:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "code": "DAILY_LIMIT_REACHED",
-                    "message": "해당 시설은 하루에 한 번만 이용할 수 있습니다."
-                }
-            )

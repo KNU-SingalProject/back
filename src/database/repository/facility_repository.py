@@ -113,3 +113,12 @@ class FacilityRepository:
         )
         result = await self.session.execute(stmt)
         return result.first() is not None
+
+    async def log_facility_usage(self, user_id: str, facility_id: int):
+        log = MemberFacility(
+            user_id=user_id,
+            facility_id=facility_id,
+            usage_date=date.today()
+        )
+        self.session.add(log)
+        await self.session.commit()
