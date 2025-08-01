@@ -6,7 +6,8 @@ app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = [
-    "https://KNU-SingalProject.github.io"
+    "https://KNU-SingalProject.github.io",
+    "https://knu-singalproject.github.io"
 ]
 
 app.add_middleware(
