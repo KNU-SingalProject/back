@@ -2,17 +2,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.sql.functions import func
 
-from database.orm import FacilityReservation, ReservationUser, User
+from database.orm import FacilityReservation, ReservationUser, User, Facility
 
 
 class FacilityRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
-
-    async def get_facility_reservation(self, facility_id: int):
-        stmt = select(FacilityReservation).where(FacilityReservation.facility_id == facility_id)
-        result = await self.session.execute(stmt)
-        return result.scalars().first()
 
     async def create_reservation(self, facility_id: int):
         reservation = FacilityReservation(facility_id=facility_id)
@@ -27,14 +22,6 @@ class FacilityRepository:
         await self.session.commit()
         return reservation_user
 
-    async def count_reservation_users(self, reservation_id: int):
-        result = await self.session.execute(
-            select(func.count(ReservationUser.id)).where(
-                ReservationUser.reservation_id == reservation_id
-            )
-        )
-        return result.scalar()
-
     async def get_reservation_users(self, reservation_id: int):
         result = await self.session.execute(
             select(User.member_id, User.name)
@@ -42,3 +29,31 @@ class FacilityRepository:
             .where(ReservationUser.reservation_id == reservation_id)
         )
         return [{"member_id": r[0], "name": r[1]} for r in result.fetchall()]
+
+    async def get_reservations_by_facility(self, facility_id: int):
+        from sqlalchemy.future import select
+
+        result = await self.session.execute(
+            select(
+                FacilityReservation.id,
+                User.name
+            )
+            .join(ReservationUser, ReservationUser.reservation_id == FacilityReservation.id)
+            .join(User, User.member_id == ReservationUser.user_id)
+            .where(FacilityReservation.facility_id == facility_id)
+        )
+
+        rows = result.fetchall()
+        if not rows:
+            return []
+
+        reservations = {}
+        for r_id, user_name in rows:
+            if r_id not in reservations:
+                reservations[r_id] = {
+                    "reservation_id": r_id,
+                    "users": []
+                }
+            reservations[r_id]["users"].append(user_name)
+
+        return list(reservations.values())

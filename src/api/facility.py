@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Request
 
 from core.di import get_facility_service
-from schema.request import FacilityReservationRequest, FacilityMultiReservationRequest, ConfirmUserRequest, \
-    FacilityReservationConfirmRequest
+from schema.request import FacilityReservationRequest, FacilityReservationConfirmRequest, \
+    FacilityMultiReservationRequest, FacilityMultiReservationConfirmRequest
 from service.facility_service import FacilityService
 
 router = APIRouter(prefix="/facility", tags=["Facility"])
@@ -21,9 +21,24 @@ async def facility_reservation_confirm(
 ):
     return await facility_service.reserve_confirm(request)
 
-@router.post("/reserve/multi/check", status_code=200)
-async def check_multi_reservation_users(
-        request: FacilityMultiReservationRequest,
-        facility_service: FacilityService = Depends(get_facility_service)
+@router.get("/{facility_id}")
+async def get_reservations_by_facility(
+    facility_id: int,
+    facility_service: FacilityService = Depends(get_facility_service)
 ):
-    return await facility_service.check_multi_users_before_reservation(request)
+    return await facility_service.get_reservations_by_facility(facility_id)
+
+@router.post("/multi-reserve", status_code=201)
+async def facility_multi_reserve(
+    request: FacilityMultiReservationRequest,
+    facility_service: FacilityService = Depends(get_facility_service)
+):
+    return await facility_service.multi_reserve(request)
+
+
+@router.post("/multi-confirm", status_code=201)
+async def facility_multi_confirm(
+    request: FacilityMultiReservationConfirmRequest,
+    facility_service: FacilityService = Depends(get_facility_service)
+):
+    return await facility_service.multi_confirm(request)

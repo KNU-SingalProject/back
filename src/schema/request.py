@@ -1,5 +1,5 @@
-from pydantic import BaseModel, constr
-from typing import Literal, List
+from pydantic import BaseModel, constr, Field
+from typing import Literal, List, Optional
 from datetime import date
 
 class SignUpRequest(BaseModel):
@@ -24,16 +24,19 @@ class FacilityReservationConfirmRequest(BaseModel):
     birth: date
     phone: str
 
-# 다중 예약 (여러 명 name + birth)
-class MultiUserInfo(BaseModel):
+class MemberReserveInfo(BaseModel):
     name: str
     birth: date
 
 class FacilityMultiReservationRequest(BaseModel):
     facility_id: int
-    users: List[MultiUserInfo]
+    members: List[MemberReserveInfo] = Field(..., max_items=4)
 
-# 전화번호 선택 후 예약 확정 (member_id 사용)
-class ConfirmUserRequest(BaseModel):
+
+# Confirm용 (phone 있음)
+class MemberConfirmInfo(MemberReserveInfo):
+    phone: Optional[str] = None
+
+class FacilityMultiReservationConfirmRequest(BaseModel):
     facility_id: int
-    member_ids: List[str]
+    members: List[MemberConfirmInfo] = Field(..., max_items=4)

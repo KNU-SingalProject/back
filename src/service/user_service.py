@@ -172,20 +172,42 @@ class UserService:
                 }
             )
 
-        # 2명 이상 → 전화번호 리스트 반환
+        # 2명 이상 → 후보 리스트(candidates) 반환
         if len(users) > 1:
             return {
                 "multiple": True,
-                "phone_numbers": [u.phone_num for u in users]
+                "candidates": [
+                    {
+                        "member_id": u.member_id,
+                        "name": u.name,
+                        "birth": u.birth,
+                        "phone": u.phone_num
+                    }
+                    for u in users
+                ]
             }
 
-        # 1명 → 이름과 생년월일 반환
+        # 1명 → 단일 유저 반환
         user = users[0]
         return {
             "multiple": False,
             "user": {
                 "member_id": user.member_id,
                 "name": user.name,
-                "birth": user.birth
+                "birth": user.birth,
+                "phone": user.phone_num
             }
+        }
+
+    async def find_user_with_name_birth_phone(self, name: str, birth: date, phone: str):
+        user = await self.user_repo.get_user_by_name_birth_phone(name, birth, phone)
+
+        if not user:
+            return None
+
+        return {
+            "member_id": user.member_id,
+            "name": user.name,
+            "birth": user.birth,
+            "phone_num": user.phone_num
         }

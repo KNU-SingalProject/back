@@ -3,6 +3,7 @@ from sqlalchemy.sql import Select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from typing import Any, Optional
+from datetime import date
 
 from database.orm import User
 
@@ -60,3 +61,14 @@ class UserRepository:
         except Exception as e:
             print(f"예기치 못한 오류: {e}")
             raise
+
+    async def get_user_by_name_birth_phone(self, name: str, birth: date, phone: str):
+        from sqlalchemy.future import select
+
+        result = await self.session.execute(
+            select(User)
+            .where(User.name == name)
+            .where(User.birth == birth)
+            .where(User.phone_num == phone)
+        )
+        return result.scalar_one_or_none()
