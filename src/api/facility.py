@@ -21,7 +21,7 @@ async def facility_reservation_confirm(
 ):
     return await facility_service.reserve_confirm(request)
 
-@router.get("/{facility_id}")
+@router.get("/{facility_id}", status_code=200)
 async def get_reservations_by_facility(
     facility_id: int,
     facility_service: FacilityService = Depends(get_facility_service)
@@ -50,7 +50,7 @@ async def delete_reservation(
 ):
     return await facility_service.delete_reservation(reservation_id)
 
-@router.patch("/{facility_id}/status")
+@router.patch("/{facility_id}/status", status_code=200)
 async def change_facility_status(
     facility_id: int,
     status: str,
@@ -58,7 +58,7 @@ async def change_facility_status(
 ):
     return await facility_service.set_facility_status(facility_id, status)
 
-@router.get("/facilities/status")
+@router.get("/facilities/status", status_code=200)
 async def get_all_facility_statuses(
     facility_service: FacilityService = Depends(get_facility_service)
 ):

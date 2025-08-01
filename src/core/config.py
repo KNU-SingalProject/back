@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: SecretStr
 
     POSTGRES_DATABASE_URL: str
+
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: SecretStr
+    AWS_BUCKET_NAME: str
     # 공통
     ENV: Literal["dev", "prod", "test"] = "dev"
 

@@ -12,8 +12,8 @@ class BoardService:
         self.s3_client = boto3.client(
             "s3",
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_REGION
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY.get_secret_value(),
+            region_name="ap-northeast-2"
         )
 
     async def upload_to_s3(self, file: UploadFile) -> str:
@@ -23,7 +23,6 @@ class BoardService:
                 file.file,
                 settings.AWS_BUCKET_NAME,
                 file_key,
-                ExtraArgs={"ACL": "public-read"}
             )
             return f"https://{settings.AWS_BUCKET_NAME}.s3.amazonaws.com/{file_key}"
         except (BotoCoreError, NoCredentialsError) as e:
@@ -54,3 +53,33 @@ class BoardService:
 
     async def get_all_boards(self):
         return await self.board_repo.get_all_boards()
+
+    async def update_board(self, board_id: int, title: str | None, content: str | None):
+        board = await self.board_repo.update_board(board_id, title, content)
+        if not board:
+            raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+        return {"message": "게시글이 수정되었습니다.", "board_id": board.id}
+
+    async def delete_board(self, board_id: int):
+        # 게시글 확인
+        board = await self.board_repo.get_board(board_id)
+        if not board:
+            raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+
+        # 이미지 URL 조회
+        image_urls = await self.board_repo.get_board_images(board_id)
+
+        # S3 이미지 삭제
+        for url in image_urls:
+            try:
+                key = url.split(f"{settings.AWS_BUCKET_NAME}.s3.amazonaws.com/")[-1]
+                self.s3_client.delete_object(Bucket=settings.AWS_BUCKET_NAME, Key=key)
+            except Exception as e:
+                print(f"S3 이미지 삭제 실패: {url}, {e}")
+
+        # DB 게시글 삭제
+        deleted = await self.board_repo.delete_board(board_id)
+        if not deleted:
+            raise HTTPException(status_code=500, detail="게시글 삭제 중 오류가 발생했습니다.")
+
+        return {"message": "게시글과 이미지가 삭제되었습니다.", "board_id": board_id}
