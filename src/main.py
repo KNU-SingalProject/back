@@ -5,14 +5,9 @@ app = FastAPI()
 
 from fastapi.middleware.cors import CORSMiddleware
 
-origins = [
-    "https://KNU-SingalProject.github.io",
-    "https://knu-singalproject.github.io"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origins],  # 배포 시에는 특정 도메인만
+    allow_origins=["*"],  # 배포 시에는 특정 도메인만
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
