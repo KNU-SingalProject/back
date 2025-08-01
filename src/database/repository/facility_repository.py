@@ -14,16 +14,9 @@ class FacilityRepository:
         result = await self.session.execute(stmt)
         return result.scalars().first()
 
-    async def create_reservation(self, facility_id: int, user_id: str):
-        # FacilityReservation 생성
-        reservation = FacilityReservation.create(facility_id)
+    async def create_reservation(self, facility_id: int):
+        reservation = FacilityReservation(facility_id=facility_id)
         self.session.add(reservation)
-        await self.session.flush()  # reservation.id 확보
-
-        # ReservationUser 생성
-        reservation_user = ReservationUser.create(reservation.id, user_id)
-        self.session.add(reservation_user)
-
         await self.session.commit()
         await self.session.refresh(reservation)
         return reservation
@@ -34,20 +27,18 @@ class FacilityRepository:
         await self.session.commit()
         return reservation_user
 
-    async def count_reservation_users(self, facility_id: int):
-        stmt = (
-            select(func.count(ReservationUser.id))
-            .join(FacilityReservation)
-            .where(FacilityReservation.facility_id == facility_id)
+    async def count_reservation_users(self, reservation_id: int):
+        result = await self.session.execute(
+            select(func.count(ReservationUser.id)).where(
+                ReservationUser.reservation_id == reservation_id
+            )
         )
-        result = await self.session.execute(stmt)
         return result.scalar()
 
     async def get_reservation_users(self, reservation_id: int):
-        stmt = (
-            select(User)
+        result = await self.session.execute(
+            select(User.member_id, User.name)
             .join(ReservationUser, ReservationUser.user_id == User.member_id)
             .where(ReservationUser.reservation_id == reservation_id)
         )
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return [{"member_id": r[0], "name": r[1]} for r in result.fetchall()]

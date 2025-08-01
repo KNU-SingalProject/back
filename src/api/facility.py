@@ -6,7 +6,7 @@ from service.facility_service import FacilityService
 
 router = APIRouter(prefix="/facility", tags=["Facility"])
 
-@router.post("/reserve", status_code=201)
+@router.post("/reserve/add", status_code=201)
 async def facility_reservation(
         request: FacilityReservationRequest,
         facility_service: FacilityService = Depends(get_facility_service)

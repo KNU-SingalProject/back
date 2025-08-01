@@ -1,5 +1,5 @@
 from pydantic import BaseModel, constr
-from typing import Literal
+from typing import Literal, List
 from datetime import date
 
 class SignUpRequest(BaseModel):
@@ -17,3 +17,11 @@ class FacilityReservationRequest(BaseModel):
     facility_id: int
     name: str
     birth: date
+
+class MultiUserInfo(BaseModel):
+    name: str
+    birth: date
+
+class MultiUserReservationRequest(BaseModel):
+    facility_id: int
+    users: List[MultiUserInfo]

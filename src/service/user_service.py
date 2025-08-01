@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from database.repository.user_repository import UserRepository
 from core.config import settings
@@ -114,28 +114,28 @@ class UserService:
 
     async def log_in(self, request: LogInRequest, req: Request):
         try:
-            users = await self.user_repo.get_user_by_name_and_birth(
+            result = await self.find_users_with_name_and_birth(
                 name=request.name,
                 birth=request.birth
             )
 
-            if not users:
+            if not result or not result.get("user"):
                 raise HTTPException(
-                    status_code=401,
+                    status_code=404,
                     detail={
-                        "code": "INVALID_CREDENTIALS",
-                        "message": "해당하는 정보가 없습니다."
+                        "code": "USER_NOT_FOUND",
+                        "message": "해당 이름과 생년으로 사용자를 찾을 수 없습니다."
                     }
                 )
 
-            if len(users) > 1:
-                phone_list = [u.phone_num for u in users]
+            # 동명이인 있을 때
+            if result["multiple"]:
                 return {
-                    "phone_numbers": phone_list
+                    "phone_numbers": result["phone_numbers"]
                 }
 
             # 한 명이면 바로 로그인
-            user = users[0]
+            user = result["user"]
             access_token = self.create_jwt(user.member_id)
             return JWTResponse(access_token=access_token, name=user.name)
 
@@ -150,3 +150,24 @@ class UserService:
                     "message": f"예기치 못한 오류 발생: {str(e)}"
                 }
             )
+
+    async def find_users_with_name_and_birth(self, name: str, birth: date):
+        users = await self.user_repo.get_user_by_name_and_birth(name=name, birth=birth)
+
+        if not users:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "USER_NOT_FOUND",
+                    "message": "해당 이름과 생년월일의 사용자가 없습니다."
+                }
+            )
+
+        if len(users) > 1:
+            return {
+                "multiple": True,
+                "message": "동일 이름과 생년월일 사용자가 여러 명 있습니다. 본인 전화번호를 선택하세요.",
+                "phone_numbers": [u.phone_num for u in users]
+            }
+
+        return {"multiple": False, "user": users[0]}

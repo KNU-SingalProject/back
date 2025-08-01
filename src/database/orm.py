@@ -72,7 +72,7 @@ class BoardImage(Base):
 class MemberFacility(Base):
     __tablename__ = "member_facility"
 
-    user_id = Column(Integer, ForeignKey("users.member_id", ondelete="CASCADE"), primary_key=True, index=True, nullable=False)
+    user_id = Column(String(6), ForeignKey("users.member_id", ondelete="CASCADE"), primary_key=True, index=True, nullable=False)
     facility_id = Column(Integer, ForeignKey("facility.id", ondelete="CASCADE"), primary_key=True, index=True, nullable=False)
     usage_date = Column(Date, primary_key=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
@@ -86,7 +86,7 @@ class FacilityStatus(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     facility_id = Column(Integer, ForeignKey("facility.id", ondelete="CASCADE"), nullable=False)
-    status = Column(Enum("active", "inactive", "off", name="facility_status"), nullable=False)
+    status = Column(Enum("active", "inactive", "off", name="facility_status_enum"), nullable=False)
 
     facility = relationship("Facility", back_populates="statuses")
 
@@ -95,7 +95,7 @@ class MemberVisit(Base):
     __tablename__ = "member_visit"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.member_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(6), ForeignKey("users.member_id", ondelete="CASCADE"), nullable=False)
     visit_time = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
 
     user = relationship("User", back_populates="visits")
@@ -122,7 +122,7 @@ class ReservationUser(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     reservation_id = Column(Integer, ForeignKey("facility_reservation.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.member_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(6), ForeignKey("users.member_id", ondelete="CASCADE"), nullable=False)
 
     reservation = relationship("FacilityReservation", back_populates="reservation_users")
     user = relationship("User", back_populates="reservations")

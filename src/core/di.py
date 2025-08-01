@@ -21,6 +21,6 @@ def get_facility_repo(session: AsyncSession = Depends(get_postgres_db)) -> Facil
 # ------------------- 서비스 관련 DI -------------------
 def get_facility_service(
     facility_repo: FacilityRepository = Depends(get_facility_repo),
-    user_repo: UserRepository = Depends(get_user_repo)  # 유저 조회 필요하면 함께 주입
+    user_service: UserService = Depends(get_user_service)
 ) -> FacilityService:
-    return FacilityService(facility_repo, user_repo)
+    return FacilityService(facility_repo, user_service)
