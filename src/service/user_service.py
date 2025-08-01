@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, date
 from database.repository.user_repository import UserRepository
 from core.config import settings
 from database.orm import User
-from schema.request import SignUpRequest, LogInRequest
+from schema.request import SignUpRequest, LogInRequest, ConfirmPhoneRequest
 from schema.response import JWTResponse
 
 
@@ -185,6 +185,25 @@ class UserService:
                     "message": f"예기치 못한 오류 발생: {str(e)}"
                 }
             )
+    async def confirm_phone(self, request: ConfirmPhoneRequest):
+        user = await self.user_repo.find_user_by_phone(request.phone)
+        if not user:
+            raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+        # ✅ 오늘 방문 여부 체크
+        if await self.visit_repo.has_visit_today(user.member_id):
+            return {
+                "visit_log": True,
+                "message": "오늘 이미 방문하셨습니다. 센터는 하루 한 번만 이용 가능합니다."
+            }
+
+        # ✅ 방문 등록
+        await self.visit_repo.add_visit(user.member_id)
+
+        return {
+            "visit_log": False,
+            "message": "센터 방문을 환영합니다."
+        }
 
     async def check_in(self, request: LogInRequest, req: Request):
         try:
