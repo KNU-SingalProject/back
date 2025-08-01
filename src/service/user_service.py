@@ -119,7 +119,7 @@ class UserService:
                 birth=request.birth
             )
 
-            if not result or not result.get("user"):
+            if not result:
                 raise HTTPException(
                     status_code=404,
                     detail={
@@ -128,16 +128,25 @@ class UserService:
                     }
                 )
 
-            # 동명이인 있을 때
-            if result["multiple"]:
+            # ✅ 동명이인 케이스 먼저 체크
+            if result.get("multiple"):
                 return {
-                    "phone_numbers": result["phone_numbers"]
+                    "phone_numbers": result.get("phone_numbers", [])
                 }
 
-            # 한 명이면 바로 로그인
-            user = result["user"]
-            access_token = self.create_jwt(user.member_id)
-            return JWTResponse(access_token=access_token, name=user.name)
+            # ✅ 한 명만 있는 경우 처리
+            user = result.get("user")
+            if not user:
+                raise HTTPException(
+                    status_code=404,
+                    detail={
+                        "code": "USER_NOT_FOUND",
+                        "message": "사용자 정보가 없습니다."
+                    }
+                )
+
+            access_token = self.create_jwt(user["member_id"])  # ✅ dict 키 접근
+            return JWTResponse(access_token=access_token, name=user["name"])
 
         except HTTPException as e:
             raise e
@@ -163,11 +172,20 @@ class UserService:
                 }
             )
 
+        # 2명 이상 → 전화번호 리스트 반환
         if len(users) > 1:
             return {
                 "multiple": True,
-                "message": "동일 이름과 생년월일 사용자가 여러 명 있습니다. 본인 전화번호를 선택하세요.",
                 "phone_numbers": [u.phone_num for u in users]
             }
 
-        return {"multiple": False, "user": users[0]}
+        # 1명 → 이름과 생년월일 반환
+        user = users[0]
+        return {
+            "multiple": False,
+            "user": {
+                "member_id": user.member_id,
+                "name": user.name,
+                "birth": user.birth
+            }
+        }

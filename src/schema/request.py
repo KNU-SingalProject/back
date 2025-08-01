@@ -18,10 +18,22 @@ class FacilityReservationRequest(BaseModel):
     name: str
     birth: date
 
+class FacilityReservationConfirmRequest(BaseModel):
+    facility_id: int
+    name: str
+    birth: date
+    phone: str
+
+# 다중 예약 (여러 명 name + birth)
 class MultiUserInfo(BaseModel):
     name: str
     birth: date
 
-class MultiUserReservationRequest(BaseModel):
+class FacilityMultiReservationRequest(BaseModel):
     facility_id: int
     users: List[MultiUserInfo]
+
+# 전화번호 선택 후 예약 확정 (member_id 사용)
+class ConfirmUserRequest(BaseModel):
+    facility_id: int
+    member_ids: List[str]
