@@ -3,7 +3,7 @@ from pydantic import SecretStr
 from typing import Literal
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # foodthing/
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ENV_PATH = BASE_DIR / ".env"
 
 # 민감한 정보 보호
@@ -11,8 +11,8 @@ ENV_PATH = BASE_DIR / ".env"
 class Settings(BaseSettings):
 
     JWT_SECRET_KEY: SecretStr
-    SESSION_MIDDLEWARE_SECRET_KEY: SecretStr
 
+    POSTGRES_DATABASE_URL: str
     # 공통
     ENV: Literal["dev", "prod", "test"] = "dev"
 
