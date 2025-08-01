@@ -7,7 +7,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
 
-    member_id = Column(Integer, primary_key=True)  # 재단에서 부여한 6자리 숫자
+    member_id = Column(String(6), primary_key=True)  # 재단에서 부여한 6자리 숫자
     name = Column(String(50), nullable=False)
     gender = Column(Enum("male", "female", name="gender_type"), nullable=False)
     birth = Column(Date, nullable=False)
@@ -21,7 +21,7 @@ class User(Base):
     reservations = relationship("ReservationUser", back_populates="user", cascade="all, delete-orphan")
 
     @classmethod
-    def create(cls, member_id: str, name: str, birth: date, gender: str, hashed_phone_num: str) -> "User":
+    def create(cls, member_id: str, name: str, birth: date, gender: str, phone_num: str) -> "User":
         today = date.today()
         age = today.year - birth.year
         if (today.month, today.day) < (birth.month, birth.day):
@@ -33,7 +33,7 @@ class User(Base):
             gender=gender,
             birth=birth,
             age=age,
-            phone_num=hashed_phone_num
+            phone_num=phone_num
         )
 
 class Facility(Base):

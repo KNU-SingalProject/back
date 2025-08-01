@@ -130,7 +130,10 @@ class UserService:
 
     async def log_in(self, request: LogInRequest, req: Request):
         try:
-            user = await self.user_repo.get_user_by_memberid(member_id=request.member_id)
+            user = await self.user_repo.get_user_by_name_and_birth(
+                name=request.name,
+                birth=request.birth
+            )
 
             if not user:
                 raise HTTPException(
@@ -141,8 +144,8 @@ class UserService:
                     }
                 )
 
-            access_token = self.create_jwt(request.member_id)
-            return JWTResponse(access_token=access_token)
+            access_token = self.create_jwt(user.member_id)
+            return JWTResponse(access_token=access_token, name=user.name)
 
         except HTTPException as e:
             raise e
