@@ -15,8 +15,9 @@ class UserService:
     secret_key = settings.JWT_SECRET_KEY.get_secret_value()
     jwt_algorithm = "HS256"
 
-    def __init__(self, user_repo: UserRepository):
+    def __init__(self, user_repo: UserRepository, visit_repo):
         self.user_repo = user_repo
+        self.visit_repo = visit_repo
 
     def create_jwt(self, member_id: str) -> str:
         return jwt.encode(
@@ -128,13 +129,29 @@ class UserService:
                     }
                 )
 
+            member_ids = []
+            if result.get("multiple"):
+                member_ids = [c["member_id"] for c in result.get("candidates", [])]
+            elif result.get("user"):
+                member_ids = [result["user"]["member_id"]]
+
+            # ✅ 하루 방문 체크
+            already_visited_today = await self.visit_repo.has_any_visit_today(member_ids)
+            if already_visited_today:
+                return {
+                    "multiple": result.get("multiple", False),
+                    "phone_numbers": [c["phone"] for c in result.get("candidates", [])] if result.get(
+                        "multiple") else [],
+                    "visit_log": True
+                }
+
             # ✅ 동명이인 케이스 먼저 체크
             if result.get("multiple"):
-                # candidates 리스트에서 전화번호만 추출
                 phone_numbers = [c["phone"] for c in result.get("candidates", [])]
                 return {
                     "multiple": True,
-                    "phone_numbers": phone_numbers
+                    "phone_numbers": phone_numbers,
+                    "message": "첫 로그인 - 방문 등록 전 단계"
                 }
 
             # ✅ 한 명만 있는 경우 처리
@@ -148,8 +165,14 @@ class UserService:
                     }
                 )
 
-            access_token = self.create_jwt(user["member_id"])  # ✅ dict 키 접근
-            return JWTResponse(access_token=access_token, name=user["name"])
+            await self.visit_repo.add_visit(user["member_id"])
+
+            access_token = self.create_jwt(user["member_id"])
+            return {
+                "access_token": access_token,
+                "name": user["name"],
+                "message": "로그인 성공 및 방문 등록 완료"
+            }
 
         except HTTPException as e:
             raise e
@@ -162,6 +185,7 @@ class UserService:
                     "message": f"예기치 못한 오류 발생: {str(e)}"
                 }
             )
+
 
     async def find_users_with_name_and_birth(self, name: str, birth: date):
         users = await self.user_repo.get_user_by_name_and_birth(name=name, birth=birth)
@@ -214,3 +238,18 @@ class UserService:
             "birth": user.birth,
             "phone_num": user.phone_num
         }
+
+    async def get_all_users(self, skip: int = 0, limit: int = 100, name: str | None = None):
+        users = await self.user_repo.get_all_users(skip=skip, limit=limit, name=name)
+        return [
+            {
+                "member_id": u.member_id,
+                "name": u.name,
+                "gender": u.gender,
+                "birth": u.birth,
+                "age": u.age,
+                "phone_num": u.phone_num,
+                "created_at": u.created_at
+            }
+            for u in users
+        ]

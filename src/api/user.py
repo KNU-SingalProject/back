@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query
 from datetime import date
 
 from schema.request import SignUpRequest, LogInRequest
@@ -29,3 +29,12 @@ async def search_users(
         user_service: UserService = Depends(get_user_service)
 ):
     return await user_service.find_users_with_name_and_birth(name, birth)
+
+@router.get("", status_code=200)
+async def get_all_users(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1),
+    name: str | None = None,
+    user_service: UserService = Depends(get_user_service)
+):
+    return await user_service.get_all_users(skip=skip, limit=limit, name=name)

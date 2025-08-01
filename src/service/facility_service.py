@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import HTTPException
 
 from database.repository.facility_repository import FacilityRepository
@@ -11,7 +13,22 @@ class FacilityService:
         self.facility_repo = facility_repo
         self.user_service = user_service
 
+    async def _check_facility_status(self, facility_id: int):
+        status = await self.facility_repo.get_facility_status(facility_id)
+        if status is None:
+            raise HTTPException(
+                status_code=404,
+                detail={"code": "FACILITY_NOT_FOUND", "message": "해당 시설을 찾을 수 없습니다."}
+            )
+        if status == "off":
+            raise HTTPException(
+                status_code=403,
+                detail={"code": "FACILITY_UNAVAILABLE", "message": "해당 시설은 현재 예약이 불가능합니다."}
+            )
+
     async def reservation(self, request: FacilityReservationRequest):
+        await self._check_facility_status(request.facility_id)
+
         user_check = await self.user_service.find_users_with_name_and_birth(
             name=request.name, birth=request.birth
         )
@@ -27,6 +44,8 @@ class FacilityService:
         return {"multiple": "false", "message": "예약이 완료되었습니다", "reservation_id": 1}
 
     async def reserve_confirm(self, request: FacilityReservationConfirmRequest):
+        await self._check_facility_status(request.facility_id)
+
         # 유저 찾기
         user = await self.user_service.find_user_with_name_birth_phone(
             name=request.name,
@@ -65,6 +84,8 @@ class FacilityService:
 
     # 다중 Reserve
     async def multi_reserve(self, request: FacilityMultiReservationRequest):
+        await self._check_facility_status(request.facility_id)
+
         confirm_required = False
         multiple_members_info = []
         unique_multiple_set = set()  # (name, birth) 중복 체크용
@@ -104,6 +125,8 @@ class FacilityService:
 
     # 다중 Confirm
     async def multi_confirm(self, request: FacilityMultiReservationConfirmRequest):
+        await self._check_facility_status(request.facility_id)
+
         reservation = await self.facility_repo.create_reservation(request.facility_id)
 
         for member in request.members:
@@ -133,3 +156,47 @@ class FacilityService:
             "message": "예약이 확정되었습니다",
             "reservation_id": reservation.id
         }
+
+    async def delete_reservation(self, reservation_id: int):
+        deleted = await self.facility_repo.delete_reservation_by_id(reservation_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=404,
+                detail={"code": "RESERVATION_NOT_FOUND", "message": "해당 예약을 찾을 수 없습니다."}
+            )
+
+        return {"message": "예약이 성공적으로 삭제되었습니다."}
+
+    async def set_facility_status(self, facility_id: int, status: str):
+        valid_statuses = ["active", "inactive", "off"]
+        if status not in valid_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail={"code": "INVALID_STATUS", "message": f"status 값은 {valid_statuses} 중 하나여야 합니다."}
+            )
+
+        updated = await self.facility_repo.update_facility_status(facility_id, status)
+        if not updated:
+            raise HTTPException(
+                status_code=404,
+                detail={"code": "FACILITY_NOT_FOUND", "message": "해당 시설을 찾을 수 없습니다."}
+            )
+
+        return {"message": f"시설 상태가 {status}로 변경되었습니다."}
+
+    async def get_all_facility_statuses(self):
+        statuses = await self.facility_repo.get_all_facility_statuses()
+        return statuses
+
+    async def _check_daily_usage_limit(self, user_id: str, facility_id: int):
+        today = date.today()
+        already_used = await self.facility_repo.has_used_facility_today(user_id, facility_id, today)
+        if already_used:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "DAILY_LIMIT_REACHED",
+                    "message": "해당 시설은 하루에 한 번만 이용할 수 있습니다."
+                }
+            )

@@ -72,3 +72,17 @@ class UserRepository:
             .where(User.phone_num == phone)
         )
         return result.scalar_one_or_none()
+
+    async def get_all_users(self, skip: int = 0, limit: int = 100, name: str | None = None):
+        try:
+            stmt = select(User)
+            if name:
+                stmt = stmt.where(User.name.like(f"%{name}%"))
+            stmt = stmt.offset(skip).limit(limit)
+
+            result = await self.session.execute(stmt)
+            return result.scalars().all()
+
+        except SQLAlchemyError as e:
+            print(f"DB 조회 오류: {e}")
+            raise

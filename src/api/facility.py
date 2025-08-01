@@ -42,3 +42,24 @@ async def facility_multi_confirm(
     facility_service: FacilityService = Depends(get_facility_service)
 ):
     return await facility_service.multi_confirm(request)
+
+@router.delete("/{reservation_id}", status_code=204)
+async def delete_reservation(
+    reservation_id: int,
+    facility_service: FacilityService = Depends(get_facility_service)
+):
+    return await facility_service.delete_reservation(reservation_id)
+
+@router.patch("/{facility_id}/status")
+async def change_facility_status(
+    facility_id: int,
+    status: str,
+    facility_service: FacilityService = Depends(get_facility_service)
+):
+    return await facility_service.set_facility_status(facility_id, status)
+
+@router.get("/facilities/status")
+async def get_all_facility_statuses(
+    facility_service: FacilityService = Depends(get_facility_service)
+):
+    return await facility_service.get_all_facility_statuses()
