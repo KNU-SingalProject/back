@@ -2,6 +2,16 @@ from fastapi import FastAPI
 from api import user
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 배포 시에는 특정 도메인만
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(user.router)
 @app.get("/")
 async def root():
