@@ -38,7 +38,7 @@ class UserRepository:
                 User.birth == birth
             )
             result = await self.session.execute(stmt)
-            return result.scalars().one_or_none()
+            return result.scalars().all()
         except SQLAlchemyError as e:
             print(f"DB 조회 오류: {e}")
             raise

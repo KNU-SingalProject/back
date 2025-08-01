@@ -12,7 +12,7 @@ class User(Base):
     gender = Column(Enum("male", "female", name="gender_type"), nullable=False)
     birth = Column(Date, nullable=False)
     age = Column(Integer, nullable=False)
-    phone_num = Column(String(128), nullable=False, unique=True)
+    phone_num = Column(String(11), nullable=False, unique=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
 
     # Relationships
