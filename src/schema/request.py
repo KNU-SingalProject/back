@@ -16,7 +16,7 @@ class LogInRequest(BaseModel):
 class ConfirmPhoneRequest(BaseModel):
     name: constr(min_length=2, max_length=20)
     birth: date
-    phone_num: constr(min_length=10, max_length=11)
+    phone_number: constr(min_length=10, max_length=11)
 
 class FacilityReservationRequest(BaseModel):
     facility_id: int

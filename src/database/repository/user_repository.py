@@ -86,3 +86,8 @@ class UserRepository:
         except SQLAlchemyError as e:
             print(f"DB 조회 오류: {e}")
             raise
+
+    async def find_user_by_phone(self, phone_number: str):
+        stmt = select(User).where(User.phone_num == phone_number)
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
