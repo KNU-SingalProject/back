@@ -130,8 +130,11 @@ class UserService:
 
             # ✅ 동명이인 케이스 먼저 체크
             if result.get("multiple"):
+                # candidates 리스트에서 전화번호만 추출
+                phone_numbers = [c["phone"] for c in result.get("candidates", [])]
                 return {
-                    "phone_numbers": result.get("phone_numbers", [])
+                    "multiple": True,
+                    "phone_numbers": phone_numbers
                 }
 
             # ✅ 한 명만 있는 경우 처리
