@@ -112,6 +112,10 @@ class FacilityReservation(Base):
     facility = relationship("Facility", back_populates="reservations")
     reservation_users = relationship("ReservationUser", back_populates="reservation", cascade="all, delete-orphan")
 
+    @classmethod
+    def create(cls, facility_id: int, status: str = "available") -> "FacilityReservation":
+        return cls(facility_id=facility_id, status=status)
+
 
 class ReservationUser(Base):
     __tablename__ = "reservation_user"
@@ -122,3 +126,7 @@ class ReservationUser(Base):
 
     reservation = relationship("FacilityReservation", back_populates="reservation_users")
     user = relationship("User", back_populates="reservations")
+
+    @classmethod
+    def create(cls, reservation_id: int, user_id: str) -> "ReservationUser":
+        return cls(reservation_id=reservation_id, user_id=user_id)

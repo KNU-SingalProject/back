@@ -12,3 +12,8 @@ class SignUpRequest(BaseModel):
 class LogInRequest(BaseModel):
     name: constr(min_length=2, max_length=20)
     birth: date
+
+class FacilityReservationRequest(BaseModel):
+    facility_id: int
+    name: str
+    birth: date
